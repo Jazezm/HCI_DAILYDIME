@@ -1,0 +1,218 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Dime - Financial Tracker</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="{% static 'finance/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts (UI upgrade) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <img src="{% static 'finance/logo.svg' %}" alt="Daily Dime Logo">
+                <h2>DAILYDIME</h2>
+            </div>
+
+            <nav>
+                <a href="#" class="nav-link active" data-page="dashboard"><i class="fas fa-home"></i>
+                    <span>HOME</span></a>
+                <a href="#" class="nav-link" data-page="transactions"><i class="fas fa-history"></i>
+                    <span>History</span></a>
+                <a href="#" class="nav-link" data-page="budgets"><i class="fas fa-wallet"></i> <span>Budgets</span></a>
+                <!-- ADDED: Categories, Accounts, Goals links -->
+                <a href="#" class="nav-link" data-page="categories"><i
+                        class="fas fa-tags"></i><span>Categories</span></a>
+                <a href="#" class="nav-link" data-page="goals"><i class="fas fa-bullseye"></i><span>Goals</span></a>
+                <a href="#" class="nav-link" data-page="profile"><i class="fas fa-user"></i> <span>Profile</span></a>
+            </nav>
+
+            <button class="new-transaction-btn" id="new-transaction-trigger">
+                <i class="fas fa-plus"></i> New Transaction
+            </button>
+
+            <!-- sidebar footer (profile summary + logout) -->
+            <div class="sidebar-footer"
+                style="margin-top:auto; padding:12px; border-top:1px solid rgba(0,0,0,0.06); display:flex; align-items:center; gap:10px;">
+                <img id="sidebar-avatar" src="{% static 'finance/avatar_placeholder.svg' %}" alt="avatar"
+                    style="width:40px;height:40px;border-radius:50%;">
+                <div style="flex:1;min-width:0;">
+                    <div id="sidebar-username" style="font-weight:600;font-size:14px;">Guest</div>
+                    <div id="sidebar-role" style="font-size:12px;color:#666;">Member</div>
+                </div>
+                <button class="btn" id="pf-logout" title="Sign out"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
+        </aside>
+
+        <!-- ADDED: floating mobile toggle (appears only on small screens via CSS) -->
+        <button id="mobile-nav-toggle" class="btn mobile-toggle" aria-label="Toggle navigation" style="display:none;">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- removed topbar entirely (was causing layout issues on mobile) -->
+
+            <!-- Dashboard Page -->
+            <div class="page" id="dashboard" style="display:block;">
+                <div class="header">
+                    <h1>Dashboard</h1>
+                    <p>Welcome back! Here's your financial overview</p>
+                </div>
+                <div class="stats-row" id="dash-totals">
+                </div>
+                <div class="charts-section">
+                    <div class="chart-card">
+                        <h3>Spending by Category</h3>
+                        <div id="spending-chart">
+                            <canvas id="pieChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Income vs Expenses</h3>
+                        <div id="income-expense-chart">
+                            <canvas id="barChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transactions (History) Page -->
+            <div class="page" id="transactions" style="display:none;">
+                <div class="header">
+                    <h1>Transaction History</h1>
+                    <p>View, edit, or delete your recent transactions</p>
+                </div>
+                <div class="transaction-list">
+                    <table class="transaction-table" style="width:100%;border-collapse:collapse;">
+                        <thead>
+                            <tr>
+                                <th style="text-align:left;padding:8px;">Title</th>
+                                <th style="text-align:left;padding:8px;">Type</th>
+                                <th style="text-align:left;padding:8px;">Amount</th>
+                                <th style="text-align:left;padding:8px;">Category</th>
+                                <th style="text-align:left;padding:8px;">Date</th>
+                                <th style="text-align:left;padding:8px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tx-list">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- BUDGETS PAGE -->
+            <div class="page" id="budgets" style="display: none;">
+                <div class="header budget-header">
+                    <div>
+                        <h1>Budgets</h1>
+                        <p>Manage your budgets and view statistics</p>
+                    </div>
+                    <button class="primary-btn" id="new-budget-btn"><i class="fas fa-plus"></i> New Budget</button>
+                </div>
+
+                <!-- totals rendered by main.js -->
+                <div class="budget-stats stats-row" id="budget-totals"></div>
+
+                <!-- budget list rendered by main.js -->
+                <div id="bud-list"></div>
+            </div>
+
+            <!-- NEW TRANSACTION PAGE -->
+            <div class="page" id="new-transaction-page" style="display: none;">
+                <h2>New Transaction</h2>
+                <div id="new-transaction-form"></div>
+            </div>
+
+            <!-- BUDGET MODAL (optional fallback) -->
+            <div id="budget-modal" class="modal" style="display:none;">
+                <div class="modal-content">
+                    <span class="close-modal" id="budget-modal-close">&times;</span>
+
+                    <h3 id="budget-modal-title">New Budget</h3>
+
+                    <label>Name</label>
+                    <input type="text" id="modal-budget-name">
+
+                    <label>Total Amount</label>
+                    <input type="number" id="modal-budget-amount">
+
+                    <label>Amount Spent</label>
+                    <input type="number" id="modal-budget-spent">
+
+                    <button id="budget-save-btn">Save</button>
+                </div>
+            </div>
+
+            <!-- Profile Page -->
+            <div class="page" id="profile" style="display:none;">
+                <div class="header">
+                    <h1>Profile</h1>
+                    <p>Your account information</p>
+                </div>
+                <div class="profile-container" id="profile-info">
+                </div>
+            </div>
+
+            <!-- ADDED: Categories page -->
+            <div class="page" id="categories" style="display:none;">
+                <div class="header">
+                    <div>
+                        <h1>Categories</h1>
+                        <p>Manage spending categories</p>
+                    </div>
+                </div>
+                <div style="padding:16px;">
+                    <div id="cat-list"></div>
+                </div>
+            </div>
+
+            <!-- ADDED: Accounts page -->
+            <div class="page" id="accounts" style="display:none;">
+                <div class="header">
+                    <div>
+                        <h1>Accounts</h1>
+                        <p>Accounts and balances</p>
+                    </div>
+                    <button class="primary-btn" id="new-account-btn"><i class="fas fa-plus"></i> New Account</button>
+                </div>
+                <div style="padding:16px;">
+                    <div id="acc-list"></div>
+                </div>
+            </div>
+
+            <!-- ADDED: Goals page -->
+            <div class="page" id="goals" style="display:none;">
+                <div class="header">
+                    <div>
+                        <h1>Goals</h1>
+                        <p>Track financial goals</p>
+                    </div>
+                    <button class="primary-btn" id="new-goal-btn"><i class="fas fa-plus"></i> New Goal</button>
+                </div>
+                <div style="padding:16px;">
+                    <div id="goal-list"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- JS -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{% static 'finance/main.js' %}"></script>
+</body>
+
+</html>
